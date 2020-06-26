@@ -10,7 +10,7 @@ services:
     ports:
       - 5432:5432
     environment:
-      POSTGRES_DB: marla
+      POSTGRES_DB: glbdata
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: mypassword12345
     networks:
@@ -24,9 +24,76 @@ services:
     networks:
       - front-network      
 
+  server:
+    image: redash/redash:latest
+    command: server
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "5000:5000"
+    environment:
+      PYTHONUNBUFFERED: 0
+      REDASH_LOG_LEVEL: "INFO"
+      REDASH_REDIS_URL: "redis://redis:6379/0"
+      REDASH_DATABASE_URL: "postgresql://admin:mypassword12345@db/glbdata"
+      REDASH_COOKIE_SECRET: veryverysecret
+      REDASH_WEB_WORKERS: 4
+    networks:
+      - front-network        
+  worker:
+    image: redash/redash:latest
+    command: scheduler
+    environment:
+      PYTHONUNBUFFERED: 0
+      REDASH_LOG_LEVEL: "INFO"
+      REDASH_REDIS_URL: "redis://redis:6379/0"
+      REDASH_DATABASE_URL: "postgresql://admin:mypassword12345@db/glbdata"
+      QUEUES: "queries,scheduled_queries,celery"
+      WORKERS_COUNT: 2
+    networks:
+      - front-network        
+  redis:
+    image: redis:3.0-alpine
+    networks:
+      - front-network        
+
+  metabase:
+    image: metabase/metabase
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: glbdata
+      MB_DB_PORT: 5432
+      MB_DB_USER: admin
+      MB_DB_PASS: mypassword12345
+      MB_DB_HOST: db
+      MB_ENCRYPTION_SECRET_KEY: arandomstringsecret
+      JAVA_TIMEZONE: Europe/Paris
+    restart: "always"
+    ports:
+      - 3000:3000
+    volumes:
+      - metabase_data:/metabase-data
+    networks:
+      - front-network          
+
+  nginx:
+    image: redash/nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - server
+    links:
+      - server:redash
+    networks:
+      - front-network      
+
 volumes:
   postgresql_data:
     driver: local
+  metabase_data:
+    driver: local    
 
 networks:
   front-network:
