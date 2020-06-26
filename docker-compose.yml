@@ -1,12 +1,20 @@
 version: '3.8'
+
 services:
-mydb:
-image: postgres
-volumes:
-- db-data:/var/lib/postgresql/data
-ports:
-         - 5432:5432/tc
- 
-volumes:
-db-data:
-driver: local
+
+  db:
+    image: postgres
+    volumes:
+    - db-data:/var/lib/postgresql/data
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: mypassword12345
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+  db-data:
+  driver: local
