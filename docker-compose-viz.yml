@@ -1,20 +1,6 @@
 version: '3.8'
 services:
 
-  db:
-    image: postgres
-    volumes:
-      - postgresql_data:/var/lib/postgresql
-    restart: always
-    ports:
-      - 5432:5432
-    environment:
-      POSTGRES_DB: glbdata
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: mypassword12345
-    networks:
-      - front-network
-
   adminer:
     image: adminer
     restart: always
